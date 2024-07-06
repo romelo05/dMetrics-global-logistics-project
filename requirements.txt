@@ -1,7 +1,6 @@
 streamlit
 pandas
 streamlit_option_menu
-csv
 re
 spacy
 altair
