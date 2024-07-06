@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plost
 from streamlit_option_menu import option_menu
 import csv
 import re
@@ -10,9 +9,6 @@ from datetime import datetime
 import plotly.express as px
 import pydeck as pdk
 from opencage.geocoder import OpenCageGeocode
-from streamlit_metrics import metric, metric_row
-from streamlit_extras.metric_cards import style_metric_cards
-from io import StringIO
 
 nlp1 = spacy.load('dMetrics-model-best')
 nlp2 = spacy.load('en_core_web_sm')
