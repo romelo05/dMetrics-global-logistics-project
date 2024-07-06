@@ -1,9 +1,11 @@
 streamlit
-pandas
+pandas==1.5.3
 streamlit_option_menu
-spacy
+spacy==3.4.4
 altair
 datetime
 plotly
 pydeck
 opencage
+numpy==1.21.6
+thinc==8.1.0
