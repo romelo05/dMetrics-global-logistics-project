@@ -9,4 +9,4 @@ pydeck==0.9.1
 opencage==2.4.0
 numpy==1.26.0
 thinc==8.1.8
-python -m spacy download en_core_web_sm
+en-core-web-sm
