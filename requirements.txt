@@ -7,4 +7,4 @@ datetime
 plotly
 pydeck
 opencage
-numpy
+numpy==1.21
