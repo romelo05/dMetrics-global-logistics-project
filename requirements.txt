@@ -1,0 +1,11 @@
+streamlit
+pandas
+stremalit_option_menu 
+csv
+re
+spacy
+altair
+datetime
+plotly
+pydeck
+opencage
