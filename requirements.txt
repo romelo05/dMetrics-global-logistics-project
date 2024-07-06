@@ -1,6 +1,6 @@
 streamlit
 pandas
-stremalit_option_menu 
+streamlit_option_menu
 csv
 re
 spacy
