@@ -10,7 +10,7 @@ import plotly.express as px
 import pydeck as pdk
 from opencage.geocoder import OpenCageGeocode
 
-nlp1 = spacy.load('dMetrics-model-best')
+nlp1 = spacy.load('/path/to/dMetrics-model-best')
 nlp2 = spacy.load('en_core_web_sm')
 api_key = '8861eb1a815746868fd864e939e4a9b8'
 remove = ['PACKAGES', 'CONTAINING', 'BOXES', 'WEIGHT', 'PALLETS', 'ORDER', 'COUNTRY', 'ORIGIN', 'MEXICO', 'BUNDLES', 'GROSS', 'FREIGHT', 'PREPAID', 'CODE', 'NUMBER', 'INVOICE', 'CISCO', 'PEDIDO', 'SAID', 'CONTAIN', 'WITH', 'TOTAL', 'PACKAGE', 'USED', 'TREATED', 'CERTIFIED', 'BAGS', 'ITEMS', 'CASES', 'PALLET', 'GENERAL', 'CONTRACT', 'RATE', 'WOODEN', 'LOAD', 'TONS', 'MEXICAN', 'EXPORT', 'TARIFF', 'CLOSED', 'POINT', 'VENTILATION', 'HARMONIZED', 'CELL']
