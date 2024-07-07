@@ -1,11 +1,11 @@
 streamlit
 pandas
 streamlit_option_menu
-spacy
 altair
 datetime
 plotly
 pydeck
 opencage
 numpy==1.21
+spacy==3.1.0
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.1.0/en_core_web_sm-3.1.0.tar.gz
