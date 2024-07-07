@@ -305,7 +305,7 @@ def validate_coordinates(df, lat_col='Latitude', lon_col='Longitude'):
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
 current_dir = os.path.dirname(__file__)
 image_path = os.path.join(current_dir, 'logo.jpg')
-st.sidebar.logo(image_path)
+st.logo(image_path)
 
 # 1. as sidebar menu
 with st.sidebar:
