@@ -482,12 +482,18 @@ if selected == "People":
             )
 
             if selected_start_date and selected_end_date:
-                # Convert the date inputs to datetime format and make them timezone-aware
-                start_date = pd.to_datetime(selected_start_date).tz_localize('UTC')
-                end_date = pd.to_datetime(selected_end_date).tz_localize('UTC')
+                # Convert the date inputs to pandas Timestamp
+                start_date = pd.Timestamp(selected_start_date)
+                end_date = pd.Timestamp(selected_end_date)
+
+                # Ensure 'Entry Time' column is datetime and timezone-aware
+                df['Entry Time'] = pd.to_datetime(df['Entry Time'], utc=True)
 
                 # Filter the DataFrame by time
-                filtered_data = df[(df['Entry Time'] >= start_date) & (df['Entry Time'] <= end_date)]
+                filtered_data = df[
+                    (df['Entry Time'] >= start_date.tz_localize('UTC')) &
+                    (df['Entry Time'] <= end_date.tz_localize('UTC'))
+                    ]
             else:
                 filtered_data = df
         else:
