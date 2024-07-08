@@ -702,7 +702,7 @@ if selected == "Location":
                                     ']', '').str.replace("'", "")
 
                                 col1, col2, col3, col4 = st.columns(4)
-                                with col1:
+                                                                with col1:
                                     st.metric(label="Most Found Commodity",
                                               value=most_found_commodity.replace('[', '').replace(']', '').replace("'",
                                                                                                                    ""))
@@ -711,8 +711,11 @@ if selected == "Location":
                                     if not unique_names_counts.empty:
                                         most_found_person_clean = unique_names_counts.iloc[0]['Name']
                                         person_occurrences = unique_names_counts.iloc[0]['Count']
-                                    st.metric(label="Most Found Person", value="N/A")
-                                    st.metric(label="Occurrences (Most Person)", value="N/A")
+                                        st.metric(label="Most Found Person", value=most_found_person_clean)
+                                        st.metric(label="Occurrences (Most Person)", value=person_occurrences)
+                                    else:
+                                        st.metric(label="Most Found Person", value="N/A")
+                                        st.metric(label="Occurrences (Most Person)", value="N/A")
                                 with col3:
                                     st.metric(label="Least Found Commodity",
                                               value=least_found_commodity.replace('[', '').replace(']', '').replace("'",
@@ -722,7 +725,9 @@ if selected == "Location":
                                     if not unique_names_counts.empty:
                                         least_found_person_clean = unique_names_counts.iloc[-1]['Name']
                                         least_person_occurrences = unique_names_counts.iloc[-1]['Count']
-                                    if 'least_found_person' in locals() and 'least_person_occurrences' in locals():
+                                        st.metric(label="Least Found Persons", value=least_found_person_clean)
+                                        st.metric(label="Occurrences (Least Person)", value=least_person_occurrences)
+                                    else:
                                         st.metric(label="Least Found Person", value="N/A")
                                         st.metric(label="Occurrences (Least Person)", value="N/A")
 
