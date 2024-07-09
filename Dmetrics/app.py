@@ -702,7 +702,7 @@ if selected == "Location":
                                     ']', '').str.replace("'", "")
 
                                 col1, col2, col3, col4 = st.columns(4)
-                                                                with col1:
+                                with col1:
                                     st.metric(label="Most Found Commodity",
                                               value=most_found_commodity.replace('[', '').replace(']', '').replace("'",
                                                                                                                    ""))
