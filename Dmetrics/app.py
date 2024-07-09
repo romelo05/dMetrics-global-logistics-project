@@ -9,271 +9,10 @@ from datetime import datetime
 import plotly.express as px
 import pydeck as pdk
 from opencage.geocoder import OpenCageGeocode
-import os
-from spacy.cli.download import download
 
-model_path = os.path.join(os.path.dirname(__file__), 'dMetrics-model-best')
-nlp1 = spacy.load(model_path)
 
-# Download 'en_core_web_sm' model
-nlp2 = spacy.load('en_core_web_sm')
 api_key = '8861eb1a815746868fd864e939e4a9b8'
-remove = ['PACKAGES', 'CONTAINING', 'BOXES', 'WEIGHT', 'PALLETS', 'ORDER', 'COUNTRY', 'ORIGIN', 'MEXICO', 'BUNDLES', 'GROSS', 'FREIGHT', 'PREPAID', 'CODE', 'NUMBER', 'INVOICE', 'CISCO', 'PEDIDO', 'SAID', 'CONTAIN', 'WITH', 'TOTAL', 'PACKAGE', 'USED', 'TREATED', 'CERTIFIED', 'BAGS', 'ITEMS', 'CASES', 'PALLET', 'GENERAL', 'CONTRACT', 'RATE', 'WOODEN', 'LOAD', 'TONS', 'MEXICAN', 'EXPORT', 'TARIFF', 'CLOSED', 'POINT', 'VENTILATION', 'HARMONIZED', 'CELL']
-quantity_list = ['PACKAGES', "BOXES", "PALLETS", "BAGS", "CASES", "SACKS", "CARTONS",
-                "DRUMS", "ISOTANKS", "CONTAINER", "SPOOLS"]
 
-def find_phone_numbers(description):
-    doc = nlp1(description)
-    match = []
-    for ent in doc.ents:
-        if ent.label_ == "PHONE NUMBER":
-            match.append(ent.text)  # Return the actual text of the entity
-    if match:
-        return match
-    else:
-        return "Not Found"
-
-def find_full_name(description):
-    if isinstance(description, str):
-        pattern = re.compile(r"(?:CONTACT:|ATTN:|CTC:|CELL \*\*\* \( \) \/)\s([A-Z][a-z][A-Z']+\s[A-Z][a-zA-Z']+)", re.IGNORECASE)
-        match = pattern.findall(description)
-        if match:
-            return list(set(match))  # Return unique names only
-        else:
-            return "Not Found"
-    else:
-        return "Not Found"
-
-def find_emails(description):
-    pattern = r'(?:EMAIL:|E-MAIL:)(.*?\.com)'
-    match = re.search(pattern, description, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_address(description):
-    pattern = re.compile(r'Address:\s*([\d\s]+)')
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_hs_codes(description):
-    pattern = re.compile(r'(?:HS CODE:|HARMONIZED NO:)\s*([\d.]+)', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_ncm_codes(description):
-    pattern = re.compile(r'NCM:\s*([\d\s,\/]+)', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_load_ids(description):
-    pattern = re.compile(r'LOAD ID:\s*(\d{10})', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_tax_ids(description):
-    pattern = re.compile(r'(?:TAX ID:|TAX-ID:)\s*([a-zA-Z0-9]+)', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_po_codes(description):
-    pattern = re.compile(r'PO:\s*(\d{10})', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_invoice_codes(description):
-    pattern = re.compile(r'INVOICE:\s*([a-zA-Z0-9]+)', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_scad_codes(description):
-    pattern = re.compile(r'(?:SCAD CODE:|SCAD CODE\.|SCAC)\s*(\w{4})', re.IGNORECASE)
-    match = pattern.search(description)
-    if match:
-        return match.group(1)
-    else:
-        return "Not Found"
-
-def find_weights(description):
-    doc = nlp1(description)
-    match = []
-    for ent in doc.ents:
-        if ent.label_ == "WEIGHT":
-            match.append(ent.text)  # Collect all matches
-    if match:
-        return ", ".join(match)  # Join all matches into a single string
-    else:
-        return "Not Found"
-
-def find_commodity(description):
-    docs = nlp1(description)
-
-    # Create a list to store parts of the text without entities
-    non_entity_parts = []
-
-    # Keep track of the end of the last entity
-    last_end = 0
-
-    for ent in docs.ents:
-        # Add the text before the entity
-        non_entity_parts.append(description[last_end:ent.start_char])
-        # Update the end position of the last entity
-        last_end = ent.end_char
-
-    # Add the remaining part of the text after the last entity
-    non_entity_parts.append(description[last_end:])
-
-    # Join the non-entity parts and return the result
-    ''.join(non_entity_parts)
-
-    doc = nlp2(''.join(non_entity_parts))
-
-    # Heuristic to filter out common irrelevant patterns
-    exclude_phrases = ["HS CODE", "N.W.", "NET WEIGHT", "CONTAINING", "PACKAGES", "BOXES", " KG ", " PCS ", "LOAD ID",
-                       "NCM", " CODE ", " FA ", " ORDER ", " PIECES ", "BAG(S", 'WOODEN PACKING', ":", "*"]
-    exclude_tokens = {"hs", "code", "n.w.", "net", "weight", "containing", "packages", "boxes", "kg", "pcs", "load",
-                      "id", "ncm", "fa", "order", "on", "pallets", "bag(s",
-                      "cdm", "origin", 'mexico', 'mt', 'gross', 'prepaid', 'freight',
-                      'country', 'bundles', 'pta', 'part', 'number', 'invoice',
-                      'cisco', 'kgm', 'pedido', 'package', 'total', 'big', 'bags',
-                      'kgs', 'maxisacks', 'items', 'cases', 'qty', 'ltd', 'inbox',
-                      'po', 'isri', 'packing', 'general', 'contract', 'pallet',
-                      'pieces', 'export', 'tariff', 'hc', 'tons', 'container',
-                      'container(s', 'cbm', 'sto', 'trade', 'name', 'seals', 'invoices',
-                      'shimpent', 'sacks', 'one', 'tec', 'harmonized', 'dangerous',
-                      'p.o', 'contain', 'spool'}
-
-    # List to hold potential product candidates
-    product_candidates = []
-
-    # Split the description on commas to handle lists of products
-    segments = [seg.strip() for seg in description.split(",")]
-
-    # Identify potential product phrases using noun chunks and entity recognition
-    for seg in segments:
-        seg_doc = nlp2(seg)
-
-        # Identify contiguous proper nouns and noun chunks
-        for token in seg_doc:
-            if token.pos_ == "PROPN" or token.pos_ == "NOUN":
-                if not any(exclude_phrase in token.text.upper() for exclude_phrase in exclude_phrases):
-                    product_candidates.append(token.text.strip())
-
-        # Additional entity extraction
-        for ent in seg_doc.ents:
-            if ent.label_ in {"PRODUCT", "ORG", "NORP", "GPE"} and not any(
-                    exclude_phrase in ent.text.upper() for exclude_phrase in exclude_phrases):
-                product_candidates.append(ent.text.strip())
-
-    # Remove duplicates and join candidates
-    product_candidates = list(dict.fromkeys(product_candidates))
-
-    # If multiple candidates, try to identify the most likely product
-    if len(product_candidates) > 1:
-        product_name = " ".join(product_candidates)
-    elif product_candidates:
-        product_name = product_candidates[0]
-    else:
-        product_name = ""
-
-    # Fallback to extract text between brackets if no candidates found
-    if not product_name:
-        if "[" in description and "]" in description:
-            product_name = description.split("[")[1].split("]")[0].strip()
-
-    # Post-process to remove unwanted tokens
-    product_name_tokens = [token for token in product_name.split() if token.lower() not in exclude_tokens]
-    product_name = " ".join(product_name_tokens)
-
-    return product_name
-
-def remove_entities(text):
-    # Process the text with spaCy
-    doc = nlp1(text)
-
-    # Create a list to store parts of the text without entities
-    non_entity_parts = []
-
-    # Keep track of the end of the last entity
-    last_end = 0
-
-    for ent in doc.ents:
-        # Add the text before the entity
-        non_entity_parts.append(text[last_end:ent.start_char])
-        # Update the end position of the last entity
-        last_end = ent.end_char
-
-    # Add the remaining part of the text after the last entity
-    non_entity_parts.append(text[last_end:])
-
-    # Join the non-entity parts and return the result
-    return ''.join(non_entity_parts)
-
-def find_quantity(description):
-    doc = nlp1(description)
-    match = []
-    for ent in doc.ents:
-        if ent.label_ in quantity_list:
-            match.append(ent.text)  # Return the actual text of the entity
-    if match:
-        return match
-    else:
-        return "Not Found"
-
-def shorten_commodities(commodity):
-    if isinstance(commodity, str):
-        return ' '.join(commodity.split()[:4])
-    return commodity
-
-def name_spliter(description):
-    pattern = re.compile(r"([A-Z][a-z][A-Z']+\s[A-Z][a-zA-Z]+)", re.IGNORECASE)
-    match = pattern.findall(description)
-    if match:
-        return match
-    else:
-        return "Not Found"
-
-def process_persons_column(csv_file, output_file):
-    with open(csv_file, 'r', encoding='utf-8', errors='replace') as infile, open(output_file, 'w', newline='', encoding="utf-8") as outfile:
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-        for row in reader:
-            persons = row['Persons']
-            if persons == "Not Found":
-                writer.writerow(row)
-            else:
-                new_row = row.copy()
-                names_list = []
-                names_list.append(name_spliter(persons))
-                for names in names_list:
-                    for name in names:
-                        new_row['Persons'] = name
-                        writer.writerow(new_row)
 
 def get_country_coordinates(country_name, api_key):
     # Initialize the OpenCage geocoder with the provided API key
@@ -303,9 +42,7 @@ def validate_coordinates(df, lat_col='Latitude', lon_col='Longitude'):
     return df
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
-current_dir = os.path.dirname(__file__)
-image_path = os.path.join(current_dir, 'logo.jpg')
-st.logo(image_path)
+st.logo("logo.jpg")
 
 # 1. as sidebar menu
 with st.sidebar:
@@ -325,26 +62,14 @@ if selected == "Upload":
     uploaded_file = st.file_uploader('Choose a csv file', type=['csv'])
 
     if uploaded_file:
+
+
         st.markdown('---')
         # Read the CSV file
         d = pd.read_csv(uploaded_file)
 
 
-        # Example parsing logic
-        columns = ["Cargo Description", "Commodities", "Consignee", "Persons", "Phone Numbers", "Emails", "Weight", "Arrival", "Departure", "Entry Time"]
-        df = pd.DataFrame(columns=columns)
-
-        df["Cargo Description"] = d["CARGO_DESC"].astype(str).str.strip()
-
-        df["Persons"] = df["Cargo Description"].apply(find_full_name).astype(str).str.strip()
-        df["Phone Numbers"] = df["Cargo Description"].apply(find_phone_numbers)
-        df["Weight"] = df["Cargo Description"].apply(find_weights)
-        df["Emails"] = df["Cargo Description"].apply(find_emails)
-        df["Consignee"] = d["CONSIGNEE_NME"].astype(str).str.strip()
-        df["Entry Time"] = d["ENTRY_TME"]
-        df["Arrival"] = d["DESTINATION_PORT_COUNTRY_NME"].astype(str).str.strip()
-        df["Departure"] = d["DEPARTURE_PORT_COUNTRY_NME"].astype(str).str.strip()
-        df["Commodities"] = df["Cargo Description"].apply(find_commodity)
+        df = pd.DataFrame(d)
 
         # Display the parsed dataframe
         st.subheader("Parsed Data")
