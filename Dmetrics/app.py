@@ -42,7 +42,7 @@ def validate_coordinates(df, lat_col='Latitude', lon_col='Longitude'):
     return df
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
-st.logo("logo.jpg")
+
 
 # 1. as sidebar menu
 with st.sidebar:
