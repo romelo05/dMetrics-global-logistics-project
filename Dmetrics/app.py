@@ -9,10 +9,146 @@ from datetime import datetime
 import plotly.express as px
 import pydeck as pdk
 from opencage.geocoder import OpenCageGeocode
+import os
+from spacy.cli.download import download
+from time import time
+import logging
+from multiprocessing import Pool, cpu_count
 
+st.set_page_config(layout='wide', initial_sidebar_state='expanded')
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+model_path = os.path.join(os.path.dirname(__file__), 'dMetrics-model-best')
 api_key = '8861eb1a815746868fd864e939e4a9b8'
+remove = ['PACKAGES', 'CONTAINING', 'BOXES', 'WEIGHT', 'PALLETS', 'ORDER', 'COUNTRY', 'ORIGIN', 'MEXICO', 'BUNDLES', 'GROSS', 'FREIGHT', 'PREPAID', 'CODE', 'NUMBER', 'INVOICE', 'CISCO', 'PEDIDO', 'SAID', 'CONTAIN', 'WITH', 'TOTAL', 'PACKAGE', 'USED', 'TREATED', 'CERTIFIED', 'BAGS', 'ITEMS', 'CASES', 'PALLET', 'GENERAL', 'CONTRACT', 'RATE', 'WOODEN', 'LOAD', 'TONS', 'MEXICAN', 'EXPORT', 'TARIFF', 'CLOSED', 'POINT', 'VENTILATION', 'HARMONIZED', 'CELL']
+quantity_list = ['PACKAGES', "BOXES", "PALLETS", "BAGS", "CASES", "SACKS", "CARTONS",
+                "DRUMS", "ISOTANKS", "CONTAINER", "SPOOLS"]
 
+@st.cache_data
+def load_model(path):
+    start_time = time()
+    model = spacy.load(path)
+    logger.info(f"Model loaded in {time() - start_time:.2f} seconds")
+    return model
+nlp1 = load_model(model_path)
+nlp2 = load_model('en_core_web_sm')
+
+
+def find_phone_numbers(description):
+    doc = nlp1(description)
+    match = []
+    for ent in doc.ents:
+        if ent.label_ == "PHONE NUMBER":
+            match.append(ent.text)  # Return the actual text of the entity
+    if match:
+        return match
+    else:
+        return "Not Found"
+
+def find_full_name(description):
+    if isinstance(description, str):
+        pattern = re.compile(r"(?:CONTACT:|ATTN:|CTC:|CELL \*\*\* \( \) \/)\s([A-Z][a-z][A-Z']+\s[A-Z][a-zA-Z']+)", re.IGNORECASE)
+        match = pattern.findall(description)
+        if match:
+            return list(set(match))  # Return unique names only
+        else:
+            return "Not Found"
+    else:
+        return "Not Found"
+
+def find_emails(description):
+    pattern = r'(?:EMAIL:|E-MAIL:)(.*?\.com)'
+    match = re.search(pattern, description, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    else:
+        return "Not Found"
+
+def find_address(description):
+    pattern = re.compile(r'Address:\s*([\d\s]+)')
+    match = pattern.search(description)
+    if match:
+        return match.group(1)
+    else:
+        return "Not Found"
+
+def find_hs_codes(description):
+    pattern = re.compile(r'(?:HS CODE:|HARMONIZED NO:)\s*([\d.]+)', re.IGNORECASE)
+    match = pattern.search(description)
+    if match:
+        return match.group(1)
+    else:
+        return "Not Found"
+
+def find_weights(description):
+    doc = nlp1(description)
+    match = []
+    for ent in doc.ents:
+        if ent.label_ == "WEIGHT":
+            match.append(ent.text)  # Collect all matches
+    if match:
+        return ", ".join(match)  # Join all matches into a single string
+    else:
+        return "Not Found"
+
+def find_commodity(description):
+    doc = nlp1(description)
+    non_entity_parts = []
+    last_end = 0
+    for ent in doc.ents:
+        non_entity_parts.append(description[last_end:ent.start_char])
+        last_end = ent.end_char
+    non_entity_parts.append(description[last_end:])
+    doc2 = nlp2(''.join(non_entity_parts))
+    product_candidates = []
+    exclude_phrases = ["HS CODE", "N.W.", "NET WEIGHT", "CONTAINING", "PACKAGES", "BOXES", " KG ", " PCS ", "LOAD ID",
+                       "NCM", " CODE ", " FA ", " ORDER ", " PIECES ", "BAG(S", 'WOODEN PACKING', ":", "*"]
+    exclude_tokens = {"hs", "code", "n.w.", "net", "weight", "containing", "packages", "boxes", "kg", "pcs", "load",
+                      "id", "ncm", "fa", "order", "on", "pallets", "bag(s",
+                      "cdm", "origin", 'mexico', 'mt', 'gross', 'prepaid', 'freight',
+                      'country', 'bundles', 'pta', 'part', 'number', 'invoice',
+                      'cisco', 'kgm', 'pedido', 'package', 'total', 'big', 'bags',
+                      'kgs', 'maxisacks', 'items', 'cases', 'qty', 'ltd', 'inbox',
+                      'po', 'isri', 'packing', 'general', 'contract', 'pallet',
+                      'pieces', 'export', 'tariff', 'hc', 'tons', 'container',
+                      'container(s', 'cbm', 'sto', 'trade', 'name', 'seals', 'invoices',
+                      'shimpent', 'sacks', 'one', 'tec', 'harmonized', 'dangerous',
+                      'p.o', 'contain', 'spool'}
+    segments = [seg.strip() for seg in description.split(",")]
+    for seg in segments:
+        seg_doc = nlp2(seg)
+        for token in seg_doc:
+            if token.pos_ in {"PROPN", "NOUN"} and not any(exclude_phrase in token.text.upper() for exclude_phrase in exclude_phrases):
+                product_candidates.append(token.text.strip())
+        for ent in seg_doc.ents:
+            if ent.label_ in {"PRODUCT", "ORG", "NORP", "GPE"} and not any(exclude_phrase in ent.text.upper() for exclude_phrase in exclude_phrases):
+                product_candidates.append(ent.text.strip())
+    product_candidates = list(dict.fromkeys(product_candidates))
+    product_name = " ".join(product_candidates) if len(product_candidates) > 1 else (product_candidates[0] if product_candidates else "")
+    if not product_name and "[" in description and "]" in description:
+        product_name = description.split("[")[1].split("]")[0].strip()
+    product_name_tokens = [token for token in product_name.split() if token.lower() not in exclude_tokens]
+    return " ".join(product_name_tokens)
+
+def find_quantity(description):
+    doc = nlp1(description)
+    match = []
+    for ent in doc.ents:
+        if ent.label_ in quantity_list:
+            match.append(ent.text)  # Return the actual text of the entity
+    if match:
+        return match
+    else:
+        return "Not Found"
+
+def name_spliter(description):
+    pattern = re.compile(r"([A-Z][a-z][A-Z']+\s[A-Z][a-zA-Z]+)", re.IGNORECASE)
+    match = pattern.findall(description)
+    if match:
+        return match
+    else:
+        return "Not Found"
 
 def get_country_coordinates(country_name, api_key):
     # Initialize the OpenCage geocoder with the provided API key
@@ -41,9 +177,34 @@ def validate_coordinates(df, lat_col='Latitude', lon_col='Longitude'):
         df = pd.DataFrame()  # return an empty dataframe if columns are missing
     return df
 
-st.set_page_config(layout='wide', initial_sidebar_state='expanded')
+def process_chunk(chunk):
+    df_chunk = pd.DataFrame(columns=["Cargo Description", "Commodities", "Consignee", "Persons", "Phone Numbers", "Emails", "Weight", "Arrival", "Departure", "Entry Time"])
+    df_chunk["Cargo Description"] = chunk["CARGO_DESC"].astype(str).str.strip()
+    df_chunk["Persons"] = df_chunk["Cargo Description"].apply(find_full_name).astype(str).str.strip()
+    df_chunk["Phone Numbers"] = df_chunk["Cargo Description"].apply(find_phone_numbers)
+    df_chunk["Weight"] = df_chunk["Cargo Description"].apply(find_weights)
+    df_chunk["Emails"] = df_chunk["Cargo Description"].apply(find_emails)
+    df_chunk["Consignee"] = chunk["CONSIGNEE_NME"].astype(str).str.strip()
+    df_chunk["Entry Time"] = chunk["ENTRY_TME"]
+    df_chunk["Arrival"] = chunk["DESTINATION_PORT_COUNTRY_NME"].astype(str).str.strip()
+    df_chunk["Departure"] = chunk["DEPARTURE_PORT_COUNTRY_NME"].astype(str).str.strip()
+    df_chunk["Commodities"] = df_chunk["Cargo Description"].apply(find_commodity)
+    return df_chunk
 
+@st.cache_data
+def process_data(d):
+    start_time = time()
+    chunk_size = len(d) // cpu_count()
+    chunks = [d[i:i + chunk_size] for i in range(0, len(d), chunk_size)]
+    with Pool(cpu_count()) as pool:
+        result = pool.map(process_chunk, chunks)
+    df = pd.concat(result, ignore_index=True)
+    logger.info(f"Data processed in {time() - start_time:.2f} seconds")
+    return df
 
+current_dir = os.path.dirname(__file__)
+image_path = os.path.join(current_dir, 'logo.jpg')
+st.logo(image_path)
 
 # 1. as sidebar menu
 with st.sidebar:
@@ -63,20 +224,12 @@ if selected == "Upload":
     uploaded_file = st.file_uploader('Choose a csv file', type=['csv'])
 
     if uploaded_file:
-
-
         st.markdown('---')
-        # Read the CSV file
         d = pd.read_csv(uploaded_file)
-
-
-        df = pd.DataFrame(d)
-
-        # Display the parsed dataframe
+        df = process_data(d)
         st.subheader("Parsed Data")
         st.session_state['df'] = df
         st.write(df)
-
     elif 'df' in st.session_state:
         st.header("Sorted Data")
         st.write(st.session_state['df'])
