@@ -210,11 +210,10 @@ st.logo(image_path)
 with st.sidebar:
     selected = option_menu(
         menu_title="Filters",
-        options=["Upload", "Consignee", "People", "Location"],
-        icons=["upload","wallet", "person", "globe2"],
+        options=["Upload", 'Overview', "Consignee", "People", "Location"],
+        icons=["upload", 'globe', "wallet", "person", "globe2"],
         menu_icon="cast",
         default_index=0,
-        # orientation="horizontal"
     )
 
 if selected == "Upload":
@@ -233,6 +232,52 @@ if selected == "Upload":
     elif 'df' in st.session_state:
         st.header("Sorted Data")
         st.write(st.session_state['df'])
+
+if selected == "Overview":
+    if 'df' in st.session_state:
+        df = st.session_state['df']  # Retrieve DataFrame from session_state
+
+        # Display metrics using style_metric_cards
+        with st.expander(f"Metrics", expanded=True):
+            st.markdown("<style>div.stMetric div.stMetricText {color: black;}</style>",
+                        unsafe_allow_html=True)
+
+            # Process DataFrame to get the unique names, consignee, and counts
+            df['Persons'] = df['Persons'].str.title()
+            df['Consignee'] = df['Consignee'].str.title()
+
+            # Initialize a list to collect records
+            records = []
+
+            for index, row in df.iterrows():
+                persons = row['Persons']
+                consignee = row['Consignee']
+                if isinstance(persons, str) and persons.startswith('[') and persons.endswith(']'):
+                    names = eval(persons)
+                    for name in names:
+                        records.append((name, consignee))
+                else:
+                    records.append((persons, consignee))
+
+            # Create a new DataFrame from the records
+            unique_names_counts = pd.DataFrame(records, columns=['Name', 'Consignee'])
+
+            # Filter out unwanted names
+            unique_names_counts = unique_names_counts[
+                (unique_names_counts['Name'] != 'Not Found') & (unique_names_counts['Name'] != 'N/A')]
+
+            # Count the occurrences
+            unique_names_counts = unique_names_counts.groupby(['Name', 'Consignee']).size().reset_index(
+                name='Count')
+
+            # Clean up names
+            unique_names_counts['Name'] = unique_names_counts['Name'].str.replace('[', '').str.replace(']',
+                                                                                                       '').str.replace(
+                "'", "")
+
+            st.table(unique_names_counts)
+    else:
+        st.write("Please upload a CSV file in the 'Upload' section first.")
 
 if selected == "Consignee":
     if 'df' in st.session_state:
