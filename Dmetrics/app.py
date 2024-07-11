@@ -178,17 +178,21 @@ def validate_coordinates(df, lat_col='Latitude', lon_col='Longitude'):
     return df
 
 def process_chunk(chunk):
-    df_chunk = pd.DataFrame(columns=["Cargo Description", "Commodities", "Consignee", "Persons", "Phone Numbers", "Emails", "Weight", "Arrival", "Departure", "Entry Time"])
+    df_chunk = pd.DataFrame(columns=["Cargo Description", "Commodities", "Commodity Type", "Consignee", "Persons", "Phone Numbers", "Emails", "Quantity", "Weight", "Arrival", "Arrival Port", "Departure", "Departure Port", "Entry Time"])
     df_chunk["Cargo Description"] = chunk["CARGO_DESC"].astype(str).str.strip()
+    df_chunk["Commodity Type"] = chunk["HARMONIZED_SYSTEM_CODE_DESCRIPTION"].astype(str).str.strip()
     df_chunk["Persons"] = df_chunk["Cargo Description"].apply(find_full_name).astype(str).str.strip()
-    df_chunk["Phone Numbers"] = df_chunk["Cargo Description"].apply(find_phone_numbers)
-    df_chunk["Weight"] = df_chunk["Cargo Description"].apply(find_weights)
-    df_chunk["Emails"] = df_chunk["Cargo Description"].apply(find_emails)
+    df_chunk["Phone Numbers"] = df_chunk["Cargo Description"].apply(find_phone_numbers).astype(str).str.strip()
+    df_chunk["Weight"] = df_chunk["Cargo Description"].apply(find_weights).astype(str).str.strip()
+    df_chunk["Emails"] = df_chunk["Cargo Description"].apply(find_emails).astype(str).str.strip()
     df_chunk["Consignee"] = chunk["CONSIGNEE_NME"].astype(str).str.strip()
     df_chunk["Entry Time"] = chunk["ENTRY_TME"]
     df_chunk["Arrival"] = chunk["DESTINATION_PORT_COUNTRY_NME"].astype(str).str.strip()
+    df_chunk["Arrival Port"] = chunk["DESTINATION_PORT_CITY_NME"].astype(str).str.strip()
     df_chunk["Departure"] = chunk["DEPARTURE_PORT_COUNTRY_NME"].astype(str).str.strip()
-    df_chunk["Commodities"] = df_chunk["Cargo Description"].apply(find_commodity)
+    df_chunk["Departure Port"] = chunk["DEPARTURE_PORT_CITY_NME"].astype(str).str.strip()
+    df_chunk["Commodities"] = df_chunk["Cargo Description"].apply(find_commodity).astype(str).str.strip()
+    df_chunk["Quantity"] = df_chunk["Cargo Description"].apply(find_quantity).astype(str).str.strip()
     return df_chunk
 
 @st.cache_data
@@ -201,6 +205,7 @@ def process_data(d):
     df = pd.concat(result, ignore_index=True)
     logger.info(f"Data processed in {time() - start_time:.2f} seconds")
     return df
+
 
 current_dir = os.path.dirname(__file__)
 image_path = os.path.join(current_dir, 'logo.jpg')
@@ -527,6 +532,8 @@ if selected == "Location":
                 show_consignee = st.sidebar.checkbox("Filter by Consignee")
                 show_persons = st.sidebar.checkbox("Filter by Persons")
                 show_time = st.sidebar.checkbox("Filter by Time")
+                show_port = st.sidebar.checkbox("Filter by Port")
+                show_commodity = st.sidebar.checkbox("Filter by Commodity Type")
 
                 try:
                     # Filter the DataFrame based on selected countries and additional filters
@@ -567,6 +574,32 @@ if selected == "Location":
                             filtered_df = filtered_df[
                                 (filtered_df['Entry Time'] >= start_utc) & (filtered_df['Entry Time'] <= end_utc)
                             ]
+
+                    if show_port:
+                      # Extract unique countries from 'Departure' and 'Arrival' columns
+                      departure_port = filtered_df['Departure Port'].unique()
+                      arrival_port = filtered_df['Arrival Port'].unique()
+                      # Combine and get unique countries
+                      unique_ports = sorted(set(departure_port) | set(arrival_port))
+                      if show_imports and show_exports:
+                        ports = st.sidebar.multiselect("Select Port", unique_ports)
+                        if ports:
+                          filtered_df = filtered_df[(filtered_df['Departure Port'].isin(ports)) | (filtered_df['Arrival Port'].isin(ports))]
+                      elif show_imports:
+                        ports = st.sidebar.multiselect("Select Port", set(arrival_port))
+                        if ports:
+                          filtered_df = filtered_df[filtered_df['Arrival Port'].isin(ports)]
+                      elif show_exports:
+                        ports = st.sidebar.multiselect("Select Port", set(departure_port))
+                        if ports:
+                          filtered_df = filtered_df[filtered_df['Departure Port'].isin(ports)]
+
+                    if show_commodity:
+                      commodity_type_unique = filtered_df['Commodity Type'].unique()
+                      selected_commodity_type = st.sidebar.multiselect("Select Commodit", commodity_type_unique)
+                      if selected_commodity_type:
+                        filtered_df = filtered_df[filtered_df['Commodity Type'].isin(selected_commodity_type)]
+
 
                     combined_df = filtered_df.copy()
 
