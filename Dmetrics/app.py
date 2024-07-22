@@ -16,7 +16,6 @@ import logging
 from multiprocessing import Pool, cpu_count
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 model_path = os.path.join(os.path.dirname(__file__), 'dMetrics-model-best')
