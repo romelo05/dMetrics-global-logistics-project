@@ -289,6 +289,25 @@ if selected == "Overview":
             unique_orgs_df = pd.DataFrame(cleaned_organizations, columns=['Unique Organizations'])
             st.write(unique_people_df)
             st.write(unique_orgs_df)
+
+            # Convert DataFrames to TSV format
+            people_tsv = unique_people_df.to_csv(sep='\t', index=False)
+            orgs_tsv = unique_orgs_df.to_csv(sep='\t', index=False)
+
+            # Create download buttons for each DataFrame
+            st.download_button(
+                label='Download Unique People as TSV',
+                data=people_tsv,
+                file_name='unique_people.tsv',
+                mime='text/tab-separated-values'
+            )
+
+            st.download_button(
+                label='Download Unique Organizations as TSV',
+                data=orgs_tsv,
+                file_name='unique_consinee.tsv',
+                mime='text/tab-separated-values'
+            )
     else:
         st.write("Please upload a CSV file in the 'Upload' section first.")
 
