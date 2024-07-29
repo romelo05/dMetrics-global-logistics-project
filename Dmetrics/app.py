@@ -280,6 +280,15 @@ if selected == "Overview":
                 "'", "")
 
             st.table(unique_names_counts)
+
+            unique_people = df['Persons'].dropna().unique()
+            unique_organizations = df['Consignee'].dropna().unique()
+            cleaned_people = [person for person in unique_people if person != 'None Found' and person != 'None']
+            cleaned_organizations = [org for org in unique_organizations if org != 'None Found']
+            unique_people_df = pd.DataFrame(cleaned_people, columns=['Unique People'])
+            unique_people_df = pd.DataFrame(cleaned_people, columns=['Unique Organizations'])
+            st.write(unique_people_df)
+            st.write(unique_orgs_df)
     else:
         st.write("Please upload a CSV file in the 'Upload' section first.")
 
