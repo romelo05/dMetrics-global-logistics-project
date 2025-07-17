@@ -46,19 +46,19 @@ This app transforms unstructured trade data within Bills of Lading into actionab
 ## 🖼 Screenshots
 
 ### 🔍 Consignee Commodity Distribution
-![Consignee](./Consignee.png)
+![image alt](https://github.com/romelo05/dMetrics-global-logistics-project/blob/main/images/Consignee.png)
 
-### 🌍 Global Trade Routes for Mexico
-![Location](./Location.png)
+### 🌍 Global Trade Within Mexico
+![image alt](https://github.com/romelo05/dMetrics-global-logistics-project/blob/main/images/Location.png)
 
 ### 👤 Person-to-Company Mapping
-![People](./People.png)
+![image alt](https://github.com/romelo05/dMetrics-global-logistics-project/blob/main/images/People.png)
 
 ### 🗃 Overview of Named Entities Extracted
-![Overview](./Overview.png)
+![image alt](https://github.com/romelo05/dMetrics-global-logistics-project/blob/main/images/Overview.png)
 
 ### 📂 Upload and Parsing Interface
-![Upload](./Upload.png)
+![image alt](https://github.com/romelo05/dMetrics-global-logistics-project/blob/main/images/Upload.png)
 
 ## 🧪 How It Works
 
