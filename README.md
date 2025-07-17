@@ -1,4 +1,4 @@
-# 📦 dMetrics Trade Intelligence Dashboard
+# 📦 dMetrics Global Logistics Dashboard (2024)
 
 An interactive data science dashboard designed to extract, process, and visualize structured insights from international shipping records, using NLP techniques and machine learning models.
 
