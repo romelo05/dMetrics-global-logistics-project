@@ -1,6 +1,6 @@
 # 📦 dMetrics Trade Intelligence Dashboard
 
-An interactive data science dashboard designed to extract, process, and visualize structured insights from international shipping records, using NLP techniques and machine learning models. This project focuses on trade activities involving Mexico and global stakeholders, aiming to support due diligence, supply chain intelligence, and compliance monitoring.
+An interactive data science dashboard designed to extract, process, and visualize structured insights from international shipping records, using NLP techniques and machine learning models.
 
 ## 🧠 Project Goals
 
