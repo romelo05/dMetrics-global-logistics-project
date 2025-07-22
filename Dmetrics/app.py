@@ -19,7 +19,7 @@ st.set_page_config(layout='wide', initial_sidebar_state='expanded')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 model_path = os.path.join(os.path.dirname(__file__), 'dMetrics-model-best')
-api_key = 'e8024d9a24f540409abe87878f65156c'
+api_key = 
 remove = ['PACKAGES', 'CONTAINING', 'BOXES', 'WEIGHT', 'PALLETS', 'ORDER', 'COUNTRY', 'ORIGIN', 'MEXICO', 'BUNDLES', 'GROSS', 'FREIGHT', 'PREPAID', 'CODE', 'NUMBER', 'INVOICE', 'CISCO', 'PEDIDO', 'SAID', 'CONTAIN', 'WITH', 'TOTAL', 'PACKAGE', 'USED', 'TREATED', 'CERTIFIED', 'BAGS', 'ITEMS', 'CASES', 'PALLET', 'GENERAL', 'CONTRACT', 'RATE', 'WOODEN', 'LOAD', 'TONS', 'MEXICAN', 'EXPORT', 'TARIFF', 'CLOSED', 'POINT', 'VENTILATION', 'HARMONIZED', 'CELL']
 quantity_list = ['PACKAGES', "BOXES", "PALLETS", "BAGS", "CASES", "SACKS", "CARTONS",
                 "DRUMS", "ISOTANKS", "CONTAINER", "SPOOLS"]
